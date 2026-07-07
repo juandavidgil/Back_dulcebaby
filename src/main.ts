@@ -1,8 +1,32 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+  const configService = app.get(ConfigService);
+
+  //El prefijo para los endpoints de la API
+  app.setGlobalPrefix('api');
+  //comuicación con el front
+  app.enableCors({
+    origin: configService.get<string>('FRONTEND_URL'),
+    credentials: true,
+  });
+
+  //validacion global
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  const port = configService.get<string>('PORT') ?? 4000;
+  await app.listen(Number(port));
+  console.log(`API ejecutandose en http://localhost:${port}/api`);
+ 
 }
 bootstrap();
