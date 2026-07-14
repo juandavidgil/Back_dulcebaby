@@ -4,5 +4,51 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url = env("DATABASE_URL") 
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Plan {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  price       Int
+  currency    String    @default("USD")
+  isActive    Boolean   @default(true)
+  payments    Payment[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Payment {
+  id                String         @id @default(cuid())
+  stripeSessionId   String?        @unique
+  paymentIntentId   String?        @unique
+  stripeCustomerId String?
+  customerName      String?
+  customerEmail     String?
+  amount            Int
+  currency          String
+  status            PaymentStatus  @default(PENDING)
+  stripeStatus      String?
+  paidAt            DateTime?
+  planId            String
+  plan              Plan           @relation(fields: [planId], references: [id])
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }
