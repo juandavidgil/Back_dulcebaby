@@ -117,4 +117,107 @@ export class PaymentsService {
       },
     });
   }
+
+  async handleWebhook(
+  request: any,
+  signature: string,
+) {
+  const event = this.stripe.webhooks.constructEvent(
+    request.rawBody,
+    signature,
+    this.configService.getOrThrow<string>('STRIPE_WEBHOOK_SECRET'),
+  );
+
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      const paymentId = session.metadata?.paymentId;
+
+      if (!paymentId) {
+        return { received: true };
+      }
+
+      await this.prisma.payment.update({
+        where: {
+          id: paymentId,
+        },
+        data: {
+          status: 'PAID',
+          stripeStatus: session.status ?? null,
+          paymentIntentId:
+            typeof session.payment_intent === 'string'
+              ? session.payment_intent
+              : null,
+          stripeCustomerId:
+            typeof session.customer === 'string'
+              ? session.customer
+              : null,
+          customerEmail:
+            session.customer_details?.email ?? '',
+          customerName:
+            session.customer_details?.name ?? null,
+          paidAt: new Date(),
+        },
+      });
+
+      break;
+    }
+
+    case 'checkout.session.expired': {
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      const paymentId = session.metadata?.paymentId;
+
+      if (paymentId) {
+        await this.prisma.payment.update({
+          where: { id: paymentId },
+          data: {
+            status: 'FAILED',
+            stripeStatus: 'expired',
+          },
+        });
+      }
+
+      break;
+    }
+
+    case 'payment_intent.payment_failed': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+
+      await this.prisma.payment.updateMany({
+        where: {
+          paymentIntentId: intent.id,
+        },
+        data: {
+          status: 'FAILED',
+          stripeStatus: intent.status,
+        },
+      });
+
+      break;
+    }
+
+    case 'charge.refunded': {
+      const charge = event.data.object as Stripe.Charge;
+
+      if (typeof charge.payment_intent === 'string') {
+        await this.prisma.payment.updateMany({
+          where: {
+            paymentIntentId: charge.payment_intent,
+          },
+          data: {
+            status: 'REFUNDED',
+          },
+        });
+      }
+
+      break;
+    }
+  }
+
+  return {
+    received: true,
+  };
+}
 }

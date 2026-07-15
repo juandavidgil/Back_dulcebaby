@@ -19,9 +19,17 @@ model User {
 model Plan {
   id          String    @id @default(cuid())
   name        String
-  description String?
+  subtitle    String
+  ageRange    String
+  description String
+  includes    String[]
+  duration    String
   price       Int
   currency    String    @default("USD")
+  priceCop    Int
+  buttonText  String
+  featured    Boolean   @default(false)
+  order       Int
   isActive    Boolean   @default(true)
   payments    Payment[]
   createdAt   DateTime  @default(now())
