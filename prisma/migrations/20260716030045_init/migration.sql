@@ -1,14 +1,5 @@
-/*
-  Warnings:
-
-  - You are about to drop the `user` table. If the table is not empty, all the data it contains will be lost.
-
-*/
 -- CreateEnum
 CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'PAID', 'FAILED', 'REFUNDED');
-
--- DropTable
-DROP TABLE "user";
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -26,9 +17,17 @@ CREATE TABLE "User" (
 CREATE TABLE "Plan" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "description" TEXT,
+    "subtitle" TEXT NOT NULL,
+    "ageRange" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "includes" TEXT[],
+    "duration" TEXT NOT NULL,
     "price" INTEGER NOT NULL,
     "currency" TEXT NOT NULL DEFAULT 'USD',
+    "priceCop" INTEGER NOT NULL,
+    "buttonText" TEXT NOT NULL,
+    "featured" BOOLEAN NOT NULL DEFAULT false,
+    "order" INTEGER NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -41,8 +40,9 @@ CREATE TABLE "Payment" (
     "id" TEXT NOT NULL,
     "stripeSessionId" TEXT,
     "paymentIntentId" TEXT,
+    "stripeCustomerId" TEXT,
     "customerName" TEXT,
-    "customerEmail" TEXT NOT NULL,
+    "customerEmail" TEXT,
     "amount" INTEGER NOT NULL,
     "currency" TEXT NOT NULL,
     "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',

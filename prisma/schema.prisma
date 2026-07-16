@@ -50,6 +50,11 @@ model Payment {
   paidAt            DateTime?
   planId            String
   plan              Plan           @relation(fields: [planId], references: [id])
+  stripeEventId   String? @unique
+  paymentMethod   String?
+  cardBrand       String?
+  cardLast4       String?
+  receiptUrl      String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 }

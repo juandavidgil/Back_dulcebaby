@@ -118,7 +118,7 @@ export class PaymentsService {
     });
   }
 
-  async handleWebhook(
+async handleWebhook(
   request: any,
   signature: string,
 ) {
@@ -138,25 +138,75 @@ export class PaymentsService {
         return { received: true };
       }
 
+      const payment = await this.prisma.payment.findUnique({
+        where: {
+          id: paymentId,
+        },
+      });
+
+      if (!payment) {
+        return { received: true };
+      }
+
+      if (payment.status === 'PAID') {
+        return { received: true };
+      }
+
+      const paymentIntent =
+        typeof session.payment_intent === 'string'
+          ? await this.stripe.paymentIntents.retrieve(
+              session.payment_intent,
+            )
+          : null;
+
+      const charge =
+        paymentIntent?.latest_charge &&
+        typeof paymentIntent.latest_charge === 'string'
+          ? await this.stripe.charges.retrieve(
+              paymentIntent.latest_charge,
+            )
+          : null;
+
       await this.prisma.payment.update({
         where: {
           id: paymentId,
         },
         data: {
           status: 'PAID',
-          stripeStatus: session.status ?? null,
+
+          stripeEventId: event.id,
+
+          stripeStatus:
+            paymentIntent?.status ?? session.status ?? null,
+
           paymentIntentId:
             typeof session.payment_intent === 'string'
               ? session.payment_intent
               : null,
+
           stripeCustomerId:
             typeof session.customer === 'string'
               ? session.customer
               : null,
+
           customerEmail:
-            session.customer_details?.email ?? '',
+            session.customer_details?.email ?? null,
+
           customerName:
             session.customer_details?.name ?? null,
+
+          paymentMethod:
+            charge?.payment_method_details?.type ?? null,
+
+          cardBrand:
+            charge?.payment_method_details?.card?.brand ?? null,
+
+          cardLast4:
+            charge?.payment_method_details?.card?.last4 ?? null,
+
+          receiptUrl:
+            charge?.receipt_url ?? null,
+
           paidAt: new Date(),
         },
       });
@@ -171,7 +221,9 @@ export class PaymentsService {
 
       if (paymentId) {
         await this.prisma.payment.update({
-          where: { id: paymentId },
+          where: {
+            id: paymentId,
+          },
           data: {
             status: 'FAILED',
             stripeStatus: 'expired',
@@ -208,12 +260,17 @@ export class PaymentsService {
           },
           data: {
             status: 'REFUNDED',
+            stripeStatus: 'refunded',
           },
         });
       }
 
       break;
     }
+
+    default:
+      console.log(`Evento no manejado: ${event.type}`);
+      break;
   }
 
   return {
