@@ -5,13 +5,26 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class PlansService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
+findConsultations() {
+  return this.prisma.plan.findMany({
+    where: {
+      isActive: true,
+      type: 'CONSULTATION',
+    },
+    orderBy: {
+      order: 'asc',
+    },
+  });
+}
+
+  async findGuides() {
     return this.prisma.plan.findMany({
       where: {
+        type: 'GUIDE',
         isActive: true,
       },
       orderBy: {
-        price: 'asc',
+        order: 'asc',
       },
     });
   }

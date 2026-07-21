@@ -16,6 +16,11 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+enum ProductType {
+  PLAN
+  GUIDE
+}
+
 model Plan {
   id          String    @id @default(cuid())
   name        String
@@ -31,9 +36,16 @@ model Plan {
   featured    Boolean   @default(false)
   order       Int
   isActive    Boolean   @default(true)
+  type        PlanType  @default(CONSULTATION)
+  pdfFile     String?
   payments    Payment[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+enum PlanType {
+  CONSULTATION
+  GUIDE
 }
 
 model Payment {

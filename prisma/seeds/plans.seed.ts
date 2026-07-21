@@ -110,6 +110,83 @@ export async function seedPlans() {
         order: 5,
         isActive: true,
       },
+      {
+        name: 'Guía del sueño 0-4 meses',
+        subtitle:
+          'Todo lo que necesitas saber sobre el sueño de tu recién nacido.',
+        ageRange: '0-4 meses',
+        description:
+          'Todo lo que necesitas saber sobre el sueño de tu recién nacido: ventanas de sueño, señales, despertares normales y ambiente seguro.',
+        includes: [
+          'Ventanas de sueño',
+          'Señales de cansancio',
+          'Ambiente seguro',
+          'Rutinas recomendadas',
+          'Descarga inmediata en PDF',
+        ],
+        duration: 'Descarga inmediata',
+        price: 1500,
+        currency: 'USD',
+        priceCop: 60000,
+        buttonText: 'Comprar',
+        featured: false,
+        order: 6,
+        isActive: true,
+
+        type: 'GUIDE',
+        pdfFile: 'Pruebas_3.pdf',
+      },
+      {
+        name: 'Guía de rutinas y siestas',
+        subtitle: 'Rutinas respetuosas según la edad del bebé.',
+        ageRange: '0-24 meses',
+        description:
+          'Aprende a establecer rutinas y horarios de sueño adaptados a la edad de tu bebé sin métodos rígidos.',
+        includes: [
+          'Rutinas por edad',
+          'Horarios de referencia',
+          'Siestas',
+          'Consejos prácticos',
+          'Descarga inmediata en PDF',
+        ],
+        duration: 'Descarga inmediata',
+        price: 1500,
+        currency: 'USD',
+        priceCop: 60000,
+        buttonText: 'Comprar',
+        featured: false,
+        order: 7,
+        isActive: true,
+
+        type: 'GUIDE',
+        pdfFile: 'Pruebas_3.pdf',
+      },
+      {
+        name: 'Guía de regresiones de sueño',
+        subtitle: 'Aprende a manejar las regresiones sin perder el progreso.',
+        ageRange: '4-24 meses',
+        description:
+          'Identifica las regresiones más comunes y aprende cómo acompañarlas respetando el desarrollo de tu bebé.',
+        includes: [
+          'Regresión de 4 meses',
+          '8-10 meses',
+          '12 meses',
+          '18 meses',
+          '24 meses',
+          'Descarga inmediata en PDF',
+        ],
+        duration: 'Descarga inmediata',
+        price: 1200,
+        currency: 'USD',
+        priceCop: 48000,
+        buttonText: 'Comprar',
+        featured: false,
+        order: 8,
+        isActive: true,
+
+        type: 'GUIDE',
+        pdfFile: 'Pruebas_3.pdf',
+      },
     ],
   });
   console.log('planes creados');

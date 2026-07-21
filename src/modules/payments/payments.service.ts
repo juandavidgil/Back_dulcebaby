@@ -10,6 +10,8 @@ import { Payment, Plan } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 
+import { EmailService } from '../email/email.service';
+
 @Injectable()
 export class PaymentsService {
   private stripe: Stripe;
@@ -17,6 +19,7 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {
     this.stripe = new Stripe(
       this.configService.getOrThrow<string>('STRIPE_SECRET_KEY'),
@@ -24,19 +27,12 @@ export class PaymentsService {
   }
 
   async createCheckoutSession(dto: CreateCheckoutSessionDto) {
-
     const plan = await this.getPlan(dto.planId);
 
-    // Crear el registro del pago en estado PENDING
     const payment = await this.createPayment(plan);
 
-    // Crear la sesión de Stripe
-    const session = await this.createStripeCheckoutSession(
-      payment,
-      plan,
-    );
+    const session = await this.createStripeCheckoutSession(payment, plan);
 
-    // Guardar el ID de la sesión de Stripe
     await this.prisma.payment.update({
       where: {
         id: payment.id,
@@ -46,7 +42,6 @@ export class PaymentsService {
       },
     });
 
-    // Devolver la URL de Stripe al frontend
     return {
       checkoutUrl: session.url,
     };
@@ -103,13 +98,9 @@ export class PaymentsService {
         },
       ],
 
-      success_url: `${this.configService.getOrThrow(
-        'FRONTEND_URL',
-      )}/success`,
+      success_url: `${this.configService.getOrThrow('FRONTEND_URL')}/success`,
 
-      cancel_url: `${this.configService.getOrThrow(
-        'FRONTEND_URL',
-      )}/cancel`,
+      cancel_url: `${this.configService.getOrThrow('FRONTEND_URL')}/cancel`,
 
       metadata: {
         paymentId: payment.id,
@@ -118,163 +109,180 @@ export class PaymentsService {
     });
   }
 
-async handleWebhook(
-  request: any,
-  signature: string,
-) {
-  const event = this.stripe.webhooks.constructEvent(
-    request.rawBody,
-    signature,
-    this.configService.getOrThrow<string>('STRIPE_WEBHOOK_SECRET'),
-  );
+  async handleWebhook(request: any, signature: string) {
+    const event = this.stripe.webhooks.constructEvent(
+      request.rawBody,
+      signature,
+      this.configService.getOrThrow<string>('STRIPE_WEBHOOK_SECRET'),
+    );
 
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object as Stripe.Checkout.Session;
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
 
-      const paymentId = session.metadata?.paymentId;
+        const paymentId = session.metadata?.paymentId;
 
-      if (!paymentId) {
-        return { received: true };
-      }
+        if (!paymentId) {
+          return { received: true };
+        }
 
-      const payment = await this.prisma.payment.findUnique({
-        where: {
-          id: paymentId,
-        },
-      });
+        const payment = await this.prisma.payment.findUnique({
+          where: {
+            id: paymentId,
+          },
+        });
 
-      if (!payment) {
-        return { received: true };
-      }
+        if (!payment) {
+          return { received: true };
+        }
 
-      if (payment.status === 'PAID') {
-        return { received: true };
-      }
+        if (payment.status === 'PAID') {
+          return { received: true };
+        }
 
-      const paymentIntent =
-        typeof session.payment_intent === 'string'
-          ? await this.stripe.paymentIntents.retrieve(
-              session.payment_intent,
-            )
-          : null;
+        const paymentIntent =
+          typeof session.payment_intent === 'string'
+            ? await this.stripe.paymentIntents.retrieve(session.payment_intent)
+            : null;
 
-      const charge =
-        paymentIntent?.latest_charge &&
-        typeof paymentIntent.latest_charge === 'string'
-          ? await this.stripe.charges.retrieve(
-              paymentIntent.latest_charge,
-            )
-          : null;
+        const charge =
+          paymentIntent?.latest_charge &&
+          typeof paymentIntent.latest_charge === 'string'
+            ? await this.stripe.charges.retrieve(paymentIntent.latest_charge)
+            : null;
 
-      await this.prisma.payment.update({
-        where: {
-          id: paymentId,
-        },
-        data: {
-          status: 'PAID',
-
-          stripeEventId: event.id,
-
-          stripeStatus:
-            paymentIntent?.status ?? session.status ?? null,
-
-          paymentIntentId:
-            typeof session.payment_intent === 'string'
-              ? session.payment_intent
-              : null,
-
-          stripeCustomerId:
-            typeof session.customer === 'string'
-              ? session.customer
-              : null,
-
-          customerEmail:
-            session.customer_details?.email ?? null,
-
-          customerName:
-            session.customer_details?.name ?? null,
-
-          paymentMethod:
-            charge?.payment_method_details?.type ?? null,
-
-          cardBrand:
-            charge?.payment_method_details?.card?.brand ?? null,
-
-          cardLast4:
-            charge?.payment_method_details?.card?.last4 ?? null,
-
-          receiptUrl:
-            charge?.receipt_url ?? null,
-
-          paidAt: new Date(),
-        },
-      });
-
-      break;
-    }
-
-    case 'checkout.session.expired': {
-      const session = event.data.object as Stripe.Checkout.Session;
-
-      const paymentId = session.metadata?.paymentId;
-
-      if (paymentId) {
-        await this.prisma.payment.update({
+        const updatedPayment = await this.prisma.payment.update({
           where: {
             id: paymentId,
           },
           data: {
-            status: 'FAILED',
-            stripeStatus: 'expired',
+            status: 'PAID',
+
+            stripeEventId: event.id,
+
+            stripeStatus: paymentIntent?.status ?? session.status ?? null,
+
+            paymentIntentId:
+              typeof session.payment_intent === 'string'
+                ? session.payment_intent
+                : null,
+
+            stripeCustomerId:
+              typeof session.customer === 'string' ? session.customer : null,
+
+            customerEmail: session.customer_details?.email ?? null,
+
+            customerName: session.customer_details?.name ?? null,
+
+            paymentMethod: charge?.payment_method_details?.type ?? null,
+
+            cardBrand: charge?.payment_method_details?.card?.brand ?? null,
+
+            cardLast4: charge?.payment_method_details?.card?.last4 ?? null,
+
+            receiptUrl: charge?.receipt_url ?? null,
+
+            paidAt: new Date(),
           },
         });
+        const plan = await this.prisma.plan.findUnique({
+          where: {
+            id: updatedPayment.planId,
+          },
+        });
+
+        console.log('Intentando enviar correo...');
+
+        console.log('Intentando enviar correo...');
+
+        try {
+          if (plan!.type === 'GUIDE') {
+            await this.emailService.sendGuideEmail({
+              email: updatedPayment.customerEmail ?? '',
+              name: updatedPayment.customerName ?? 'Cliente',
+              guide: plan!.name,
+              pdfFile: plan!.pdfFile!,
+            });
+          } else {
+            await this.emailService.sendConsultationEmail({
+              email: updatedPayment.customerEmail ?? '',
+              name: updatedPayment.customerName ?? 'Cliente',
+              plan: plan!.name,
+              amount: updatedPayment.amount,
+              receipt: updatedPayment.receiptUrl ?? '',
+            });
+          }
+
+          console.log('✅ Correo enviado correctamente');
+        } catch (error) {
+          console.error('❌ Error enviando correo');
+          console.error(error);
+        }
+
+        break;
       }
 
-      break;
-    }
+      case 'checkout.session.expired': {
+        const session = event.data.object as Stripe.Checkout.Session;
 
-    case 'payment_intent.payment_failed': {
-      const intent = event.data.object as Stripe.PaymentIntent;
+        const paymentId = session.metadata?.paymentId;
 
-      await this.prisma.payment.updateMany({
-        where: {
-          paymentIntentId: intent.id,
-        },
-        data: {
-          status: 'FAILED',
-          stripeStatus: intent.status,
-        },
-      });
+        if (paymentId) {
+          await this.prisma.payment.update({
+            where: {
+              id: paymentId,
+            },
+            data: {
+              status: 'FAILED',
+              stripeStatus: 'expired',
+            },
+          });
+        }
 
-      break;
-    }
+        break;
+      }
 
-    case 'charge.refunded': {
-      const charge = event.data.object as Stripe.Charge;
+      case 'payment_intent.payment_failed': {
+        const intent = event.data.object as Stripe.PaymentIntent;
 
-      if (typeof charge.payment_intent === 'string') {
         await this.prisma.payment.updateMany({
           where: {
-            paymentIntentId: charge.payment_intent,
+            paymentIntentId: intent.id,
           },
           data: {
-            status: 'REFUNDED',
-            stripeStatus: 'refunded',
+            status: 'FAILED',
+            stripeStatus: intent.status,
           },
         });
+
+        break;
       }
 
-      break;
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+
+        if (typeof charge.payment_intent === 'string') {
+          await this.prisma.payment.updateMany({
+            where: {
+              paymentIntentId: charge.payment_intent,
+            },
+            data: {
+              status: 'REFUNDED',
+              stripeStatus: 'refunded',
+            },
+          });
+        }
+
+        break;
+      }
+
+      default:
+        console.log(`Evento no manejado: ${event.type}`);
+        break;
     }
 
-    default:
-      console.log(`Evento no manejado: ${event.type}`);
-      break;
+    return {
+      received: true,
+    };
   }
-
-  return {
-    received: true,
-  };
-}
 }
