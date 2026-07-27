@@ -3,48 +3,29 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import Stripe from 'stripe';
+import { EpaycoService } from '../epayco/epayco.service';
 import { Payment, Plan } from '@prisma/client';
-
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
-
 import { EmailService } from '../email/email.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class PaymentsService {
-  private stripe: Stripe;
-
   constructor(
     private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
     private readonly emailService: EmailService,
-  ) {
-    this.stripe = new Stripe(
-      this.configService.getOrThrow<string>('STRIPE_SECRET_KEY'),
-    );
-  }
+    private readonly epaycoService: EpaycoService,
+  ) {}
 
   async createCheckoutSession(dto: CreateCheckoutSessionDto) {
     const plan = await this.getPlan(dto.planId);
 
-    const payment = await this.createPayment(plan);
+    const payment = await this.createPayment(plan, dto.currency);
 
-    const session = await this.createStripeCheckoutSession(payment, plan);
+    const checkout = await this.epaycoService.createCheckout(payment, plan);
 
-    await this.prisma.payment.update({
-      where: {
-        id: payment.id,
-      },
-      data: {
-        stripeSessionId: session.id,
-      },
-    });
-
-    return {
-      checkoutUrl: session.url,
-    };
+    return checkout;
   }
 
   private async getPlan(planId: string): Promise<Plan> {
@@ -65,224 +46,89 @@ export class PaymentsService {
     return plan;
   }
 
-  private async createPayment(plan: Plan): Promise<Payment> {
+  private async createPayment(
+    plan: Plan,
+    currency: 'COP' | 'USD',
+  ): Promise<Payment> {
+    const amount = currency === 'COP' ? plan.priceCop : plan.priceUsd;
+
     return this.prisma.payment.create({
       data: {
-        amount: plan.price,
-        currency: plan.currency,
+        amount,
+        currency,
         status: 'PENDING',
         customerEmail: '',
+        gateway: 'EPAYCO',
+        reference: crypto.randomUUID(),
         planId: plan.id,
       },
     });
   }
 
-  private async createStripeCheckoutSession(
-    payment: Payment,
-    plan: Plan,
-  ): Promise<Stripe.Checkout.Session> {
-    return await this.stripe.checkout.sessions.create({
-      mode: 'payment',
+  async confirmation(data: any) {
+    if (data.x_cod_response !== '1') {
+      return {
+        success: false,
+      };
+    }
 
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: plan.currency.toLowerCase(),
-            unit_amount: plan.price,
-            product_data: {
-              name: plan.name,
-              description: plan.description ?? '',
-            },
-          },
-        },
-      ],
-
-      success_url: `${this.configService.getOrThrow('FRONTEND_URL')}/success`,
-
-      cancel_url: `${this.configService.getOrThrow('FRONTEND_URL')}/cancel`,
-
-      metadata: {
-        paymentId: payment.id,
-        planId: plan.id,
+    const payment = await this.prisma.payment.findUnique({
+      where: {
+        id: data.x_extra1,
+      },
+      include: {
+        plan: true,
       },
     });
-  }
 
-  async handleWebhook(request: any, signature: string) {
-    const event = this.stripe.webhooks.constructEvent(
-      request.rawBody,
-      signature,
-      this.configService.getOrThrow<string>('STRIPE_WEBHOOK_SECRET'),
-    );
+    if (!payment) {
+      return {
+        success: false,
+      };
+    }
 
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
+    if (payment.status === 'PAID') {
+      return {
+        success: true,
+      };
+    }
 
-        const paymentId = session.metadata?.paymentId;
+    const updatedPayment = await this.prisma.payment.update({
+      where: {
+        id: payment.id,
+      },
 
-        if (!paymentId) {
-          return { received: true };
-        }
+      data: {
+        status: 'PAID',
+        customerName: data.x_customer_name,
+        customerEmail: data.x_customer_email,
+        transactionId: data.x_transaction_id,
+        paymentMethod: data.x_franchise,
+        receiptUrl: data.x_url_invoice,
+        paidAt: new Date(),
+      },
+    });
 
-        const payment = await this.prisma.payment.findUnique({
-          where: {
-            id: paymentId,
-          },
-        });
-
-        if (!payment) {
-          return { received: true };
-        }
-
-        if (payment.status === 'PAID') {
-          return { received: true };
-        }
-
-        const paymentIntent =
-          typeof session.payment_intent === 'string'
-            ? await this.stripe.paymentIntents.retrieve(session.payment_intent)
-            : null;
-
-        const charge =
-          paymentIntent?.latest_charge &&
-          typeof paymentIntent.latest_charge === 'string'
-            ? await this.stripe.charges.retrieve(paymentIntent.latest_charge)
-            : null;
-
-        const updatedPayment = await this.prisma.payment.update({
-          where: {
-            id: paymentId,
-          },
-          data: {
-            status: 'PAID',
-
-            stripeEventId: event.id,
-
-            stripeStatus: paymentIntent?.status ?? session.status ?? null,
-
-            paymentIntentId:
-              typeof session.payment_intent === 'string'
-                ? session.payment_intent
-                : null,
-
-            stripeCustomerId:
-              typeof session.customer === 'string' ? session.customer : null,
-
-            customerEmail: session.customer_details?.email ?? null,
-
-            customerName: session.customer_details?.name ?? null,
-
-            paymentMethod: charge?.payment_method_details?.type ?? null,
-
-            cardBrand: charge?.payment_method_details?.card?.brand ?? null,
-
-            cardLast4: charge?.payment_method_details?.card?.last4 ?? null,
-
-            receiptUrl: charge?.receipt_url ?? null,
-
-            paidAt: new Date(),
-          },
-        });
-        const plan = await this.prisma.plan.findUnique({
-          where: {
-            id: updatedPayment.planId,
-          },
-        });
-
-        console.log('Intentando enviar correo...');
-
-        console.log('Intentando enviar correo...');
-
-        try {
-          if (plan!.type === 'GUIDE') {
-            await this.emailService.sendGuideEmail({
-              email: updatedPayment.customerEmail ?? '',
-              name: updatedPayment.customerName ?? 'Cliente',
-              guide: plan!.name,
-              pdfFile: plan!.pdfFile!,
-            });
-          } else {
-            await this.emailService.sendConsultationEmail({
-              email: updatedPayment.customerEmail ?? '',
-              name: updatedPayment.customerName ?? 'Cliente',
-              plan: plan!.name,
-              amount: updatedPayment.amount,
-              receipt: updatedPayment.receiptUrl ?? '',
-            });
-          }
-
-          console.log('✅ Correo enviado correctamente');
-        } catch (error) {
-          console.error('❌ Error enviando correo');
-          console.error(error);
-        }
-
-        break;
-      }
-
-      case 'checkout.session.expired': {
-        const session = event.data.object as Stripe.Checkout.Session;
-
-        const paymentId = session.metadata?.paymentId;
-
-        if (paymentId) {
-          await this.prisma.payment.update({
-            where: {
-              id: paymentId,
-            },
-            data: {
-              status: 'FAILED',
-              stripeStatus: 'expired',
-            },
-          });
-        }
-
-        break;
-      }
-
-      case 'payment_intent.payment_failed': {
-        const intent = event.data.object as Stripe.PaymentIntent;
-
-        await this.prisma.payment.updateMany({
-          where: {
-            paymentIntentId: intent.id,
-          },
-          data: {
-            status: 'FAILED',
-            stripeStatus: intent.status,
-          },
-        });
-
-        break;
-      }
-
-      case 'charge.refunded': {
-        const charge = event.data.object as Stripe.Charge;
-
-        if (typeof charge.payment_intent === 'string') {
-          await this.prisma.payment.updateMany({
-            where: {
-              paymentIntentId: charge.payment_intent,
-            },
-            data: {
-              status: 'REFUNDED',
-              stripeStatus: 'refunded',
-            },
-          });
-        }
-
-        break;
-      }
-
-      default:
-        console.log(`Evento no manejado: ${event.type}`);
-        break;
+    if (payment.plan.type === 'GUIDE') {
+      await this.emailService.sendGuideEmail({
+        email: updatedPayment.customerEmail!,
+        name: updatedPayment.customerName ?? 'Cliente',
+        guide: payment.plan.name,
+        pdfFile: payment.plan.pdfFile!,
+      });
+    } else {
+      await this.emailService.sendConsultationEmail({
+        email: updatedPayment.customerEmail!,
+        name: updatedPayment.customerName ?? 'Cliente',
+        plan: payment.plan.name,
+        amount: updatedPayment.amount,
+        currency: updatedPayment.currency,
+        receipt: updatedPayment.receiptUrl ?? '',
+      });
     }
 
     return {
-      received: true,
+      success: true,
     };
   }
 }

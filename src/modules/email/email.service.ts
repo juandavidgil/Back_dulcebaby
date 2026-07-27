@@ -39,6 +39,7 @@ export class EmailService {
     name: string;
     plan: string;
     amount: number;
+    currency: string;
     receipt: string;
   }) {
     try {
@@ -154,7 +155,11 @@ export class EmailService {
                         font-size:24px;
                         font-weight:bold;
                     ">
-                        USD ${(data.amount / 100).toFixed(2)}
+                        ${
+                          data.currency === 'COP'
+                            ? `$${data.amount.toLocaleString('es-CO')} COP`
+                            : `$${data.amount.toFixed(2)} USD`
+                        }
                     </td>
                 </tr>
             </table>
@@ -165,7 +170,7 @@ export class EmailService {
             line-height:1.7;
             font-size:15px;
         ">
-            Puedes descargar el comprobante oficial de Stripe haciendo clic en el siguiente botón:
+            Puedes descargar el comprobante oficial de ePayco haciendo clic en el siguiente botón:
         </p>
 
         <div style="

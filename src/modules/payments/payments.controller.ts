@@ -1,6 +1,5 @@
-import { Body, Controller, Headers, HttpCode, Post, Req} from '@nestjs/common';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
 
 import { PaymentsService } from './payments.service';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
@@ -8,29 +7,27 @@ import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 @ApiTags('Payments')
 @Controller('payments')
 export class PaymentsController {
-  constructor(
-    private readonly paymentsService: PaymentsService,
-  ) {}
+  constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post('create-checkout-session')
   @ApiOperation({
-    summary: 'Crear una sesión de pago en Stripe',
+    summary: 'Crear checkout de ePayco',
   })
-  async createCheckoutSession(
-    @Body() dto: CreateCheckoutSessionDto,
-  ) {
+  async createCheckoutSession(@Body() dto: CreateCheckoutSessionDto) {
     return this.paymentsService.createCheckoutSession(dto);
   }
 
-  @Post('webhook')
+  /**
+   * Endpoint que ePayco llamará automáticamente
+   * cuando el usuario termine el pago.
+   */
+  @Post('confirmation')
   @HttpCode(200)
-  async webhook(
-    @Req() request: Request,
-    @Headers('stripe-signature') signature: string,
-  ) {
-    return this.paymentsService.handleWebhook(
-      request,
-      signature,
-    );
+  async confirmation(@Body() body: any) {
+    console.log('=========== CONFIRMACION EPAYCO ===========');
+    console.log(body);
+    console.log('===========================================');
+
+    return this.paymentsService.confirmation(body);
   }
 }

@@ -22,25 +22,24 @@ enum ProductType {
 }
 
 model Plan {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   subtitle    String
   ageRange    String
   description String
   includes    String[]
   duration    String
-  price       Int
-  currency    String    @default("USD")
   priceCop    Int
+  priceUsd    Int
   buttonText  String
-  featured    Boolean   @default(false)
-  order       Int
-  isActive    Boolean   @default(true)
-  type        PlanType  @default(CONSULTATION)
+  featured    Boolean  @default(false)
+  order        Int
+  isActive     Boolean @default(true)
+  type        PlanType @default(CONSULTATION)
   pdfFile     String?
   payments    Payment[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum PlanType {
@@ -49,26 +48,22 @@ enum PlanType {
 }
 
 model Payment {
-  id                String         @id @default(cuid())
-  stripeSessionId   String?        @unique
-  paymentIntentId   String?        @unique
-  stripeCustomerId String?
-  customerName      String?
-  customerEmail     String?
-  amount            Int
-  currency          String
-  status            PaymentStatus  @default(PENDING)
-  stripeStatus      String?
-  paidAt            DateTime?
-  planId            String
-  plan              Plan           @relation(fields: [planId], references: [id])
-  stripeEventId   String? @unique
+  id              String   @id @default(cuid())
+  customerName    String?
+  customerEmail   String?
+  amount          Int
+  currency        String
+  status          PaymentStatus @default(PENDING)
+  transactionId   String? @unique
+  reference       String? @unique
   paymentMethod   String?
-  cardBrand       String?
-  cardLast4       String?
   receiptUrl      String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  paidAt          DateTime?
+  gateway         String? // EPAYCO
+  planId          String
+  plan            Plan @relation(fields: [planId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 enum PaymentStatus {

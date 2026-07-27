@@ -7,19 +7,19 @@ import { PrismaModule } from './prisma/prisma.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { EmailModule } from './modules/email/email.module';
+import { EpaycoModule } from './modules/epayco/epayco.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
     }),
     PrismaModule,
     PlansModule,
     PaymentsModule,
     EmailModule,
+    EpaycoModule,
+
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

@@ -6,13 +6,15 @@ import { PaymentsService } from './payments.service';
 
 import { PrismaModule } from '../../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
+import { EpaycoModule } from '../epayco/epayco.module';
 
 @Module({
-  imports: [
-    ConfigModule,
+imports: [
     PrismaModule,
+    ConfigModule,
     EmailModule,
-  ],
+    EpaycoModule,
+],
   controllers: [PaymentsController],
   providers: [PaymentsService],
 })
