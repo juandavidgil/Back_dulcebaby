@@ -13,10 +13,13 @@ async function bootstrap() {
   //El prefijo para los endpoints de la API
   app.setGlobalPrefix('api');
   //comuicación con el front
-  app.enableCors({
-    origin: configService.get<string>('FRONTEND_URL'),
-    credentials: true,
-  });
+const origins =
+  configService.get<string>('FRONTEND_URL')?.split(',') ?? [];
+
+app.enableCors({
+  origin: origins,
+  credentials: true,
+});
 
   //validacion global
   app.useGlobalPipes(
