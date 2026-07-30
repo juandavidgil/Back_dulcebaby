@@ -13,11 +13,23 @@ async function bootstrap() {
   //El prefijo para los endpoints de la API
   app.setGlobalPrefix('api');
   //comuicación con el front
-const origins =
-  configService.get<string>('FRONTEND_URL')?.split(',') ?? [];
+const allowedOrigins = (
+  configService.get<string>('FRONTEND_URL') || ''
+).split(',');
 
 app.enableCors({
-  origin: origins,
+  origin: (origin, callback) => {
+    // Permite herramientas como Postman o curl
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    callback(new Error('No permitido por CORS'), false);
+  },
   credentials: true,
 });
 
