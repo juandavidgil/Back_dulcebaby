@@ -14,7 +14,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   //comuicación con el front
 const allowedOrigins = (
-  configService.get<string>('FRONTEND_URL') || ''
+  configService.get<string>('FRONTEND_URLS') || ''
 ).split(',');
 
 app.enableCors({
