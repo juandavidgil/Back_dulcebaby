@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Payment, Plan } from '@prisma/client';
 import * as crypto from 'crypto';
+//import { response } from 'express';
 
 @Injectable()
 export class EpaycoService {
@@ -53,7 +54,7 @@ export class EpaycoService {
       lang: 'es',
 
       // URLs
-      response: `${frontend}/payment/success`,
+      //response: `${frontend}/success`,
       confirmation: `${backend}/api/payments/confirmation`,
 
       // Referencias

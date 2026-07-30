@@ -49,7 +49,7 @@ export class EmailService {
         from,
         to: data.email,
 
-        subject: 'Pago recibido correctamente ❤️',
+        subject: '💜 Dulce Baby - Pago recibido correctamente',
 
         html: `
 <!DOCTYPE html>
@@ -62,7 +62,7 @@ export class EmailService {
 <body style="
     margin:0;
     padding:40px 20px;
-    background:#FFF5F8;
+    background:#f0edff;
     font-family:Arial, Helvetica, sans-serif;
 ">
 
@@ -72,24 +72,37 @@ export class EmailService {
     background:#ffffff;
     border-radius:20px;
     overflow:hidden;
-    box-shadow:0 10px 35px rgba(0,0,0,.08);
+    box-shadow:0 10px 35px rgba(79,63,177,.15);
 ">
 
     <!-- Encabezado -->
     <div style="
-        background:linear-gradient(135deg,#FF8FB8,#F472B6);
+        background:linear-gradient(135deg,#4f3fb1,#8b89d5);
         padding:40px;
         text-align:center;
         color:white;
     ">
 
-        <div style="font-size:55px;">
-            🍼👶
+        <div>
+            <img 
+                src="cid:logo"
+                alt="Dulce Baby"
+                style="
+                    width:90px;
+                    height:90px;
+                    object-fit:contain;
+                    background:#ffffff;
+                    border-radius:20px;
+                    padding:10px;
+                "
+            >
         </div>
 
+
         <h1 style="
-            margin:10px 0 5px;
+            margin:15px 0 5px;
             font-size:30px;
+            color:#ffffff;
         ">
             Dulce Baby
         </h1>
@@ -104,67 +117,96 @@ export class EmailService {
 
     </div>
 
+
     <!-- Contenido -->
-    <div style="padding:40px; color:#555;">
+    <div style="
+        padding:40px;
+        color:#555;
+    ">
 
         <h2 style="
-            color:#F472B6;
+            color:#4f3fb1;
             margin-top:0;
         ">
-            Hola ${data.name} 💕
+            Hola ${data.name} 💜
         </h2>
+
 
         <p style="
             font-size:16px;
             line-height:1.7;
         ">
             Nos alegra informarte que hemos recibido tu pago correctamente.
-            Gracias por confiar en <strong>Dulce Baby</strong>.
+            Gracias por confiar en <strong style="color:#4f3fb1;">
+            Dulce Baby
+            </strong>.
         </p>
+
 
         <!-- Resumen -->
         <div style="
-            background:#FFF0F5;
-            border:1px solid #FFD6E8;
+            background:#f6e3ec;
+            border:1px solid #d0cff4;
             border-radius:15px;
             padding:25px;
             margin:30px 0;
         ">
 
+
             <h3 style="
                 margin-top:0;
-                color:#E75480;
+                color:#4f3fb1;
             ">
                 Resumen de tu compra
             </h3>
 
-            <table width="100%" style="font-size:15px;">
-                <tr>
-                    <td><strong>Producto / Plan</strong></td>
-                    <td align="right">${data.plan}</td>
-                </tr>
+
+            <table width="100%" style="font-size:15px;color:#555;">
+
 
                 <tr>
-                    <td style="padding-top:12px;">
+                    <td>
+                        <strong>Producto / Plan</strong>
+                    </td>
+
+                    <td align="right">
+                        ${data.plan}
+                    </td>
+                </tr>
+
+
+                <tr>
+
+                    <td style="
+                        padding-top:12px;
+                    ">
                         <strong>Total pagado</strong>
                     </td>
 
+
                     <td align="right" style="
                         padding-top:12px;
-                        color:#F472B6;
+                        color:#4f3fb1;
                         font-size:24px;
                         font-weight:bold;
                     ">
-                        ${
-                          data.currency === 'COP'
-                            ? `$${data.amount.toLocaleString('es-CO')} COP`
-                            : `$${data.amount.toFixed(2)} USD`
-                        }
+
+                        ${data.currency === 'COP'
+            ? `$${data.amount.toLocaleString('es-CO')} COP`
+            : `$${data.amount.toFixed(2)} USD`
+          }
+
                     </td>
+
                 </tr>
+
+
             </table>
 
+
         </div>
+
+
 
         <p style="
             line-height:1.7;
@@ -173,16 +215,20 @@ export class EmailService {
             Puedes descargar el comprobante oficial de ePayco haciendo clic en el siguiente botón:
         </p>
 
+
+
+
         <div style="
             text-align:center;
             margin:35px 0;
         ">
 
+
             <a
                 href="${data.receipt}"
                 target="_blank"
                 style="
-                    background:#F472B6;
+                    background:#4f3fb1;
                     color:#ffffff;
                     text-decoration:none;
                     padding:16px 32px;
@@ -195,48 +241,79 @@ export class EmailService {
                 📄 Descargar comprobante
             </a>
 
+
         </div>
+
+
+
 
         <hr style="
             border:none;
-            border-top:1px solid #F3D4E2;
+            border-top:1px solid #d0cff4;
             margin:35px 0;
         ">
 
+
+
+
         <p style="
             text-align:center;
-            color:#888;
+            color:#8b89d5;
             line-height:1.8;
             font-size:15px;
         ">
-            Gracias por confiar en nosotros 💗<br>
+
+            Gracias por confiar en nosotros 💜<br>
+
             Esperamos acompañarte en esta hermosa etapa.<br><br>
 
-            <strong style="color:#F472B6;">
+
+            <strong style="
+                color:#4f3fb1;
+            ">
                 Dulce Baby
             </strong>
+
         </p>
 
+
     </div>
+
+
 
     <!-- Footer -->
     <div style="
-        background:#FFF0F5;
+        background:#e9e6f5;
         text-align:center;
         padding:18px;
-        color:#999;
+        color:#8b89d5;
         font-size:13px;
     ">
 
+
         © ${new Date().getFullYear()} Dulce Baby · Todos los derechos reservados.
+
 
     </div>
 
+
 </div>
+
 
 </body>
 </html>
 `,
+attachments: [
+  {
+    filename: 'favicon.ico',
+    path: path.join(
+      process.cwd(),
+      'assets',
+      'favicon.ico',
+    ),
+    cid: 'logo',
+  },
+],
       });
 
       this.logger.log(`✅ Correo enviado correctamente`);
@@ -249,74 +326,265 @@ export class EmailService {
     }
   }
   async sendGuideEmail(data: {
-    email: string;
-    name: string;
-    guide: string;
-    pdfFile: string;
-  }) {
-    try {
-      const from = `"${this.config.getOrThrow(
-        'SMTP_FROM_NAME',
-      )}" <${this.config.getOrThrow('SMTP_FROM')}>`;
+  email: string;
+  name: string;
+  guide: string;
+  pdfFile: string;
+}) {
+  try {
+    const from = `"${this.config.getOrThrow(
+      'SMTP_FROM_NAME',
+    )}" <${this.config.getOrThrow('SMTP_FROM')}>`;
 
-      const pdfPath = path.join(
-        process.cwd(),
-        'storage',
-        'guides',
-        data.pdfFile,
-      );
+    const pdfPath = path.join(
+      process.cwd(),
+      'storage',
+      'guides',
+      data.pdfFile,
+    );
 
-      if (!fs.existsSync(pdfPath)) {
-        throw new Error(`No existe el archivo: ${pdfPath}`);
-      }
-
-      this.logger.log(`Enviando guía ${data.pdfFile} a ${data.email}`);
-
-      const info = await this.transporter.sendMail({
-        from,
-        to: data.email,
-
-        subject: `Tu guía "${data.guide}" ya está disponible 🍼`,
-
-        html: `
-      <div style="font-family:Arial;padding:40px;background:#FFF7FB">
-
-        <h1 style="color:#F472B6">
-          ¡Gracias por tu compra! 💕
-        </h1>
-
-        <p>Hola <strong>${data.name}</strong>,</p>
-
-        <p>
-          Adjuntamos la guía que acabas de adquirir.
-        </p>
-
-        <p>
-          Esperamos que te ayude muchísimo en esta hermosa etapa.
-        </p>
-
-        <br>
-
-        <strong>Dulce Baby 🍼</strong>
-
-      </div>
-      `,
-
-        attachments: [
-          {
-            filename: data.pdfFile,
-            path: pdfPath,
-          },
-        ],
-      });
-
-      this.logger.log('✅ Guía enviada correctamente');
-
-      return info;
-    } catch (error) {
-      this.logger.error('❌ Error enviando guía');
-      console.error(error);
-      throw error;
+    if (!fs.existsSync(pdfPath)) {
+      throw new Error(`No existe el archivo: ${pdfPath}`);
     }
+
+    this.logger.log(`Enviando guía ${data.pdfFile} a ${data.email}`);
+
+    const info = await this.transporter.sendMail({
+      from,
+      to: data.email,
+
+      subject: `Tu guía "${data.guide}" ya está disponible 💜`,
+
+      html: `
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+<meta charset="UTF-8">
+<title>Guía disponible</title>
+</head>
+
+
+<body style="
+    margin:0;
+    padding:40px 20px;
+    background:#f0edff;
+    font-family:Arial, Helvetica, sans-serif;
+">
+
+
+<div style="
+    max-width:650px;
+    margin:auto;
+    background:#ffffff;
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 10px 35px rgba(79,63,177,.15);
+">
+
+
+<!-- Encabezado -->
+
+<div style="
+    background:linear-gradient(135deg,#4f3fb1,#8b89d5);
+    padding:40px;
+    text-align:center;
+    color:white;
+">
+
+
+<img
+    src="cid:logo"
+    alt="Dulce Baby"
+    style="
+        width:90px;
+        height:90px;
+        object-fit:contain;
+        background:#ffffff;
+        border-radius:20px;
+        padding:10px;
+    "
+>
+
+
+<h1 style="
+    margin:15px 0 5px;
+    font-size:30px;
+    color:#ffffff;
+">
+    Dulce Baby
+</h1>
+
+
+<p style="
+    margin:0;
+    font-size:17px;
+">
+    Tu guía ya está disponible 💜
+</p>
+
+
+</div>
+
+
+
+<!-- Contenido -->
+
+<div style="
+    padding:40px;
+    color:#555;
+">
+
+
+<h2 style="
+    color:#4f3fb1;
+    margin-top:0;
+">
+    Hola ${data.name} 💜
+</h2>
+
+
+
+<p style="
+    font-size:16px;
+    line-height:1.7;
+">
+
+Gracias por confiar en <strong style="color:#4f3fb1;">
+Dulce Baby
+</strong>.
+
+Hemos preparado tu guía para acompañarte durante esta hermosa etapa.
+
+</p>
+
+
+
+<div style="
+    background:#f6e3ec;
+    border:1px solid:#d0cff4;
+    border-radius:15px;
+    padding:25px;
+    margin:30px 0;
+">
+
+
+<h3 style="
+    color:#4f3fb1;
+    margin-top:0;
+">
+📘 ${data.guide}
+</h3>
+
+
+<p style="
+    line-height:1.6;
+">
+Tu archivo PDF se encuentra adjunto en este correo.
+</p>
+
+
+</div>
+
+
+
+<p style="
+    text-align:center;
+    color:#8b89d5;
+    line-height:1.8;
+">
+
+Esperamos que esta guía sea de gran ayuda para ti 💜
+
+</p>
+
+
+
+<hr style="
+    border:none;
+    border-top:1px solid #d0cff4;
+    margin:35px 0;
+">
+
+
+
+<p style="
+    text-align:center;
+    color:#8b89d5;
+    font-size:15px;
+">
+
+
+Gracias por elegirnos.<br><br>
+
+
+<strong style="color:#4f3fb1;">
+Dulce Baby
+</strong>
+
+
+</p>
+
+
+</div>
+
+
+
+<!-- Footer -->
+
+<div style="
+    background:#e9e6f5;
+    text-align:center;
+    padding:18px;
+    color:#8b89d5;
+    font-size:13px;
+">
+
+
+© ${new Date().getFullYear()} Dulce Baby · Todos los derechos reservados.
+
+
+</div>
+
+
+
+</div>
+
+
+</body>
+
+</html>
+`,
+
+      attachments: [
+        {
+          filename: 'favicon.ico',
+          path: path.join(
+            process.cwd(),
+            'assets',
+            'favicon.ico',
+          ),
+          cid: 'logo',
+        },
+
+        {
+          filename: data.pdfFile,
+          path: pdfPath,
+        },
+      ],
+    });
+
+
+    this.logger.log('✅ Guía enviada correctamente');
+
+    return info;
+
+  } catch (error) {
+
+    this.logger.error('❌ Error enviando guía');
+    console.error(error);
+
+    throw error;
   }
+}
 }
