@@ -32,37 +32,32 @@ export class EpaycoService {
       .digest('hex');
 
     return {
-      // Configuración checkout
-      key: publicKey,
-      test,
-      external: false,
+  key: publicKey,
+  test: this.config.get<string>('EPAYCO_TEST') === 'true',
+  external: false,
 
-      // Producto
-      name: plan.name,
-      description: plan.subtitle,
+  name: plan.name,
+  description: plan.subtitle,
 
-      invoice: payment.id,
+  invoice: payment.id,
 
-      // Moneda y valor
-      currency: payment.currency,
-      amount,
+  currency: payment.currency,
+  amount,
 
-      tax: '0',
-      tax_base: '0',
+  tax: '0',
+  tax_base: '0',
 
-      country: 'CO',
-      lang: 'es',
+  country: 'CO',
+  lang: 'es',
 
-      // URLs
-      //response: `${frontend}/success`,
-      confirmation: `${backend}/api/payments/confirmation`,
+  response: `${frontend}/payment/success`,
+  confirmation: `${backend}/api/payments/confirmation`,
 
-      // Referencias
-      extra1: payment.id,
-      extra2: plan.id,
-      extra3: plan.type,
+  extra1: payment.id,
+  extra2: plan.id,
+  extra3: plan.type,
 
-      signature,
-    };
+  signature,
+};
   }
 }
