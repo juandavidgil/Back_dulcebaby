@@ -34,7 +34,7 @@ export class EpaycoService {
     return {
       // Configuración checkout
       key: publicKey,
-      test: true,
+      test,
       external: false,
 
       // Producto
